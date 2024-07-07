@@ -1,39 +1,44 @@
-from rest_framework.serializers import ModelSerializer
-from .models import Product, Delivery, Payment, Cart,User,Order
-from store import serializers
+from rest_framework import serializers
+from .models import User, Delivery, Product, ProductImage, Payment, Cart, Order
 
-class ProductSerializer(ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Product
-        fields = '__all__'
+        model = User
+        fields = ['id', 'email', 'username', 'password']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
 
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        return user
 
 class DeliverySerializer(serializers.ModelSerializer):
     class Meta:
         model = Delivery
-        fields = '__all__'
-        extra_kwargs = {
-            'user_profile': {'required': False}
-        }
+        fields = ['id', 'user_profile', 'firstname', 'lastname', 'country', 'state', 'city', 'postal_code', 'contact']
 
-class PaymentSerializer(ModelSerializer):
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'description', 'price', 'instructions', 'sold_out']
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ['id', 'product', 'image']
+
+class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = '__all__'
+        fields = ['id', 'product', 'made_on', 'user_profile']
 
-class CartSerializer(ModelSerializer):
+class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
-        fields = '__all__'
+        fields = ['id', 'user_profile', 'product']
 
-class UserSerializer(ModelSerializer):
-    class Meta:
-        model = User
-        fields = '__all__'
-        extra_kwargs = {
-            'password': {'write_only': True},  # Ensure password is write-only
-        }
-class OrderSerializer(ModelSerializer):
+class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = '__all__'
+        fields = ['id', 'user_profile', 'product', 'quantity', 'total_amount', 'created_at']
