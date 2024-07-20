@@ -1,34 +1,96 @@
-from rest_framework import viewsets
-from .models import User, Delivery, Product, ProductImage, Payment, Cart, Order
-from .serializers import UserSerializer, DeliverySerializer, ProductSerializer, ProductImageSerializer, PaymentSerializer, CartSerializer, OrderSerializer
+from rest_framework import generics, permissions, status, viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+from .serializers import UserSerializer, LoginSerializer, UpdateUserSerializer, DeliverySerializer, ProductSerializer, ProductImageSerializer, PaymentSerializer, CartSerializer, OrderSerializer
+from .models import Delivery, Product, ProductImage, Payment, Cart, Order
 
-class UserViewSet(viewsets.ModelViewSet):
+class Register(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [AllowAny]
 
-class DeliveryViewSet(viewsets.ModelViewSet):
+    def perform_create(self, serializer):
+        user = serializer.save()
+        login(self.request, user)  # Automatically log the user in after registration
+        return Response({
+            'user': UserSerializer(user).data,
+        })
+class Login(APIView):
+    serializer_class = LoginSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = authenticate(username=serializer.validated_data['username'], password=serializer.validated_data['password'])
+        if user is not None:
+            login(request, user)
+            return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+        return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+class Logout(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        logout(request)
+        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+
+class DeleteUser(generics.DestroyAPIView):
+    queryset = User.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'id'
+
+class UpdateUser(generics.UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UpdateUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'id'
+
+class Delivery(viewsets.ModelViewSet):
     queryset = Delivery.objects.all()
     serializer_class = DeliverySerializer
+    permission_classes = [IsAuthenticated]
 
-class ProductViewSet(viewsets.ModelViewSet):
+class Product(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [AllowAny]
 
-class ProductImageViewSet(viewsets.ModelViewSet):
+class ProductImage(viewsets.ModelViewSet):
     queryset = ProductImage.objects.all()
     serializer_class = ProductImageSerializer
+    permission_classes = [AllowAny]
 
-class PaymentViewSet(viewsets.ModelViewSet):
+class Payment(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
 
-class CartViewSet(viewsets.ModelViewSet):
+class Cart(viewsets.ModelViewSet):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
 
-class OrderViewSet(viewsets.ModelViewSet):
+class Order(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+class Users(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
+
+
+    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+
+
 
 # from django.http import response
 # from django.contrib.auth import authenticate, login
